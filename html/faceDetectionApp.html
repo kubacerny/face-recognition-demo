@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://sdk.amazonaws.com/js/aws-sdk-2.418.0.min.js"></script>
+  <script src="app-pageActions.js"></script>
+  <script src="app-rekognition.js"></script>
+  <meta charset="UTF-8">
+  <title>Rekognition - playground</title>
+  <style>
+    .container {
+        margin: 10px;
+        padding: 20px;
+        border: 1px solid grey;
+    }
+    .half {
+        display: inline-block;
+        width: 40%;
+    }
+  </style>
+</head>
+
+<body>
+  <H1>Image rekognition playground</H1>
+
+  <div class="container">
+    <video id="video" width="320" height="240" autoplay></video>
+    <br/>
+    <button id="snap">Snap Photo</button>
+    from camera or upload from file
+    <input type="file" name="fileToUpload" id="fileToUpload" accept="image/*">
+  </div>
+
+  <div class="container">
+    Current image:
+    <br />
+    <canvas id="canvas" width="320" height="240"></canvas>
+    <br />
+    <button onclick="javascript:SearchFacesByImage();">Search Faces By Image</button>
+    &nbsp;
+    <button onclick="javascript:IndexCurrentFaces();">Index Current Faces</button>
+    <input id="personFirstName" type="text" value="your first name"/>
+    <br/>
+    Result:
+    <pre id="result"></pre>
+  </div>
+
+  <br />
+  <button onclick="javascript:CreateCollection();">Create Collection</button>
+  <button onclick="javascript:DescribeCollection();">Describe Collection</button>
+  <button onclick="javascript:ListFaces();">List Faces</button>
+
+  <br/>
+  <br/>
+  <input id="faceID" type="text" value="face-id-to-delete"/>
+  <button onclick="javascript:DeleteFace();">Delete Face</button>
+
+
+</body>
+</html>
