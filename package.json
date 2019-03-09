@@ -1,0 +1,35 @@
+{
+  "name": "face-recognition-demo",
+  "version": "1.0.0",
+  "description": "Face recognition demo using AWS Recognition.",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kubacerny/face-recognition-demo.git"
+  },
+  "keywords": [
+    "face",
+    "recognition",
+    "aws"
+  ],
+  "author": "Jakub Cerny",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kubacerny/face-recognition-demo/issues"
+  },
+  "homepage": "https://github.com/kubacerny/face-recognition-demo#readme",
+  "dependencies": {
+    "atob": "^2.1.2",
+    "aws-sdk": "^2.418.0",
+    "uuid": "^3.3.2"
+  },
+  "devDependencies": {
+    "mocha": "^6.0.2"
+  }
+}
