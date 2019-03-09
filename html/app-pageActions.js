@@ -50,9 +50,8 @@ function LoadImageToCanvas() {
         var canvas = document.getElementById('canvas');
         var context = canvas.getContext('2d');
         context.drawImage(img, 0, 0, 320, 240);
+        AnalyzeCanvasImage();
       }
-
-      AnalyzeCanvasImage(e.target.result);
     };
   })(file);
   reader.readAsDataURL(file);
