@@ -1,5 +1,6 @@
 var atob = require('atob');
 var assert = require('assert');
+const sharp = require('sharp');
 var faceDetection = require("../index.js");
 const myAWSRecognition = require('../lib/aws-recognition');
 
@@ -14,6 +15,14 @@ describe('Array', function() {
     it('GetCanvasImageBytes()', function() {
       var bytes = myAWSRecognition.GetCanvasImageBytes();
       assert.equal(typeof bytes, "object");
+    });
+
+    it('Crop Image Bytes', function() {
+      var bytes = myAWSRecognition.GetCanvasImageBytes();
+      var croppedImageBytes = sharp(Buffer.from(bytes))
+          .extract({ left: 5, top: 5, width: 5, height: 5 })
+          .toBuffer();
+      assert.equal(typeof croppedImageBytes, "object");
     });
 
     it('Detect Faces()', function() {
@@ -38,6 +47,7 @@ describe('Array', function() {
       this.timeout(10000);
 
       faceDetection.init();
+      faceDetection.getCurrentFace();
       faceDetection.indexCurrentFace('mel', function(data){
         assert.equal(data.FaceRecords[0].Face.ExternalImageId.replace(/_.*$/,''), 'mel');
         console.log("indexCurrentFace() -> " + JSON.stringify(data, false, 4));
