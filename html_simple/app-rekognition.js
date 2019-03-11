@@ -1,38 +1,19 @@
 var COLLECTION_ID = "matyldafaces";
 var rekognition = null;
-var store = {};
-
-var unknownFaceImageBytes = null;
+var store = {
+  // responses from API Methods
+  faceData: {},
+  unknownFaceImageBytes: null,
+  detecting: false
+};
 
 function UpdateStore() {
     var faceData = {};
     if (store.detectFaces && store.detectFaces.FaceDetails) {
       if (store.detectFaces.FaceDetails.length > 0) {
           var firstFaceDetails = store.detectFaces.FaceDetails[0];
-
-          var oldElement = document.getElementById('firstFaceCanvas');
-          if (oldElement) {oldElement.remove();}
-          var canvas = getCanvasFromVideo();
-          var context = canvas.getContext('2d');
-          var firstFaceCanvas = document.createElement('canvas');
-          var firstFaceContext = firstFaceCanvas.getContext('2d');
-          var imageWidth = canvas.width;
-          var imageHeight = canvas.height;
           var boundingBox = firstFaceDetails.BoundingBox;
-          var leftCorner = boundingBox.Left * imageWidth;
-          var topCorner = boundingBox.Top * imageHeight;
-          var faceWidth = boundingBox.Width * imageWidth;
-          var faceHeight = boundingBox.Height * imageHeight;
-          firstFaceCanvas.id = 'firstFaceCanvas';
-          firstFaceCanvas.width = faceWidth;
-          firstFaceCanvas.height = faceHeight;
-          var resultElem = document.getElementById('result');
-          resultElem.parentNode.insertBefore(firstFaceCanvas, resultElem);
-          firstFaceContext.drawImage(canvas, leftCorner, topCorner, faceWidth, faceHeight, 0, 0, faceWidth, faceHeight);
-          context.lineWidth = 2; /* px */
-          context.strokeStyle = 'green';
-          context.rect(leftCorner, topCorner, faceWidth, faceHeight);
-          context.stroke();
+          store.firstFaceCanvas = getFaceCanvas(store.detectFacesCanvas, boundingBox);
 
           var infoDataFaceDetails = {
             AgeRange: firstFaceDetails.AgeRange,
@@ -67,94 +48,29 @@ function UpdateStore() {
     // render(faceData);
 }
 
-function render(faceData) {
-    var content = "";
-    if (faceData) {
-        if (!faceData.AgeRange) {
-            content += 'Where are some people? Please come and look at the camera.';
-        } else {
-            if (faceData.SimilarPeople && faceData.SimilarPeople.length > 0) {
-                var name = faceData.SimilarPeople[0].Value;
-                content += "Hello <span class=\"name\">" + name + "!</span> How are you? <br>";
+function AnalyzeCanvasImage(currentCanvas) {
+    if (!store.detecting) {
+        store.detecting = true;
+        DetectFaces(currentCanvas, function() {
+            if (store.detectFaces.FaceDetails.length > 0) {
+                var firstFaceDetails = store.detectFaces.FaceDetails[0];
+                var boundingBox = firstFaceDetails.BoundingBox;
+                SearchFacesByImage(getFaceCanvas(currentCanvas, boundingBox), function() {
+                    render(store.faceData);
+                    store.detecting = false;
+                });
             } else {
-                content += "Hello, I do not know you yet. What is your name? <br>";
-                // Remember uknow face and trigger modal
-                faceCanvas = document.getElementById('firstFaceCanvas');
-                unknownFaceImageBytes = GetCanvasImageBytes(faceCanvas.toDataURL());
-                faceCanvasClone = faceCanvas.cloneNode();
-                faceCanvasClone.id = "tmpFaceCanvas";
-                faceCanvasClone.getContext('2d').drawImage(faceCanvas, 0, 0, faceCanvas.width, faceCanvas.height);
-                popupCanvasContainer = document.getElementById('popupCanvasContainer');
-                popupCanvasContainer.innerHTML = "";
-                popupCanvasContainer.appendChild(faceCanvasClone);
-                ShowModal();
+                render({});
+                store.detecting = false;
             }
-            if (faceData.AgeRange) {
-              content += "You are between " + faceData.AgeRange.Low + " - " + faceData.AgeRange.High + " years old. <br>";
-            }
-
-            if (faceData.Gender) {
-                if (faceData.Gender.Confidence > 80) {
-                    content += "You are <span class=\"name\">" +
-                        (faceData.Gender.Value == 'Male' ? 'men' : 'women')  +
-                        ".</span>";
-                } else {
-                    content += "I think you are <span class=\"name\">" +
-                        (faceData.Gender.Value == 'Male' ? 'men' : 'women')  +
-                        ".</span> But I am not sure.";
-                }
-            }
-
-            if (faceData.Emotions) {
-                content += "<br><br>";
-                var emotions = faceData.Emotions.map((item) => (item.Type));
-                if (emotions.length <= 0) {
-                    content += "Show me some emotions! (sad, smile, surprise, calm,...)";
-                } else {
-                    content += "You are " + emotions.join(", ") + ".";
-                }
-            }
-        }
+        });
     }
-    // content += "<pre>" + JSON.stringify(faceData, false, 4) + "</pre>";
-    document.getElementById("result").innerHTML = content;
-}
-
-function AnalyzeCanvasImage() {
-  var returnedCalls = 0;
-  function checkIfReady() {
-     returnedCalls++;
-     if (returnedCalls >= 2) {
-         render(store.faceData);
-     }
-  }
-  DetectFaces(checkIfReady);
-  SearchFacesByImage(checkIfReady);
 }
 
 /***********************************************************************/
 /* Rekognition API Methods */
 
-  function CreateCollection() {
-    var params = {
-      CollectionId: COLLECTION_ID
-    };
-    RekognitionAPICall('createCollection', params);
-  }
-  function DescribeCollection() {
-    var params = {
-      CollectionId: COLLECTION_ID
-    };
-    RekognitionAPICall('describeCollection', params);
-  }
-  function IndexCurrentFaces(imageBytes) {
-    function getFirstName() {
-        var formValue = document.getElementById('personFirstName').value;
-        return formValue;
-    }
-    if (!imageBytes) {
-        imageBytes = GetCanvasImageBytes(null, 'firstFaceCanvas');
-    }
+  function IndexCurrentFaces(imageBytes, personFirstName) {
     var params = {
       CollectionId: COLLECTION_ID,
       Image: {
@@ -163,7 +79,7 @@ function AnalyzeCanvasImage() {
       DetectionAttributes: [
         'ALL'
       ],
-      ExternalImageId: getFirstName() + "_" + Date.now(),
+      ExternalImageId: personFirstName + "_" + Date.now(),
       MaxFaces: 1,
       QualityFilter: 'AUTO'
     };
@@ -172,10 +88,11 @@ function AnalyzeCanvasImage() {
     }
   }
 
-  function DetectFaces(callback) {
+  function DetectFaces(canvas, callback) {
+    store.detectFacesCanvas = canvas;
     var params = {
       Image: {
-        Bytes: GetCanvasImageBytes()
+        Bytes: GetCanvasImageBytes(canvas)
       },
       Attributes: [
         'ALL',
@@ -184,34 +101,16 @@ function AnalyzeCanvasImage() {
     RekognitionAPICall('detectFaces', params, callback);
   }
 
-  function SearchFacesByImage(callback) {
+  function SearchFacesByImage(canvas, callback) {
     var params = {
        CollectionId: COLLECTION_ID,
        FaceMatchThreshold: 85,
        Image: {
-         Bytes: GetCanvasImageBytes()
+         Bytes: GetCanvasImageBytes(canvas)
        },
        MaxFaces: 5
     };
     RekognitionAPICall('searchFacesByImage', params, callback);
-  }
-
-  function DeleteFace() {
-    var params = {
-      CollectionId: COLLECTION_ID,
-      FaceIds: [
-        document.getElementById('faceID').value
-      ]
-     };
-     RekognitionAPICall('deleteFaces', params);
-  }
-
-  function ListFaces() {
-    var params = {
-      CollectionId: COLLECTION_ID,
-      MaxResults: 100
-    };
-    RekognitionAPICall('listFaces', params);
   }
 
   function RekognitionAPICall(method, params, callback) {
@@ -221,15 +120,13 @@ function AnalyzeCanvasImage() {
            store[method] = data;
            console.log(err, err.stack);
            document.getElementById("apiCallResult").innerHTML = "API Call Response = " + JSON.stringify(err, false, 4);
-           UpdateStore();
-           callback && callback();
          } else {
            store[method] = data;
            console.log(data);
            document.getElementById("apiCallResult").innerHTML = "API Call Response = " + JSON.stringify(data, false, 4);
-           UpdateStore();
-           callback && callback();
          }
+         UpdateStore();
+         callback && callback();
      });
   }
 

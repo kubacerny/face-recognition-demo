@@ -4,7 +4,11 @@ Get faces from your web camera or from image upload. Analyze the images, play wi
 Simple demo:
 https://kubacerny.github.io/face-recognition-demo/html_simple/simpleFaceDetectionApp.html
 
-
-Technicall view:
+* nodejs lib - for usage in Matylda robot
+* more technicall demo:
 https://kubacerny.github.io/face-recognition-demo/html/faceDetectionApp.html
-for live demo.
+
+Note: do not judge the quality of source codes - it was just a hackathon Demo
+made asap.
+
+For a commercial help with your AI projects, you can contact me.
